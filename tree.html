@@ -3,21 +3,25 @@
   <head>
     <meta charset="utf-8">
 	<link rel="stylesheet" href="app.css" />
-    <title>We Craft App</title>
+    <title>Tree Example</title>
   </head>
 
   <body>
   
+	<input type="file" id="treeData" accept =".json">
 	<button id="add-child" disabled="disabled">Add Child</button>
 	<button id="remove-node" disabled="disabled">Remove Node</button>
 	<button id="remove-child" disabled="disabled">Remove All child</button>
+	<button id="turn-bst">Turn Into BST</button>
 	<!-- load the d3.js library -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
 	
-
+	<!-- load the scripts that do the things
+	<script type="text/javascript" src="treeData.json"></script>-->
 	<script src=treeData2.js> </script>
 	<script src=tree.js> </script>
-
+	  
+	<!--<input type="button" value="Click me!" onClick="displayyyy();">-->
 
 	
   </body>

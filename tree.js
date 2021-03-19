@@ -22,7 +22,7 @@ var diagonal = d3.svg.diagonal()
 var svg = d3.select("body").append("svg")
 	.attr("width", width + margin.right + margin.left)
 	.attr("height", height + margin.top + margin.bottom)
-  .append("g")
+	.append("g")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 //d3.json("treeData.json",function(treeData{
@@ -51,7 +51,7 @@ function update(source) {
 
   // Update the nodes…
   var node = svg.selectAll("g.node")
-	  .data(nodes, function(d) { return d.id || (d.id = ++i); });
+	  .data(nodes, function(d) { return d.id || (d.id = ++i); })
 
   // Enter any new nodes at the parent's previous position.
   var nodeEnter = node.enter().append("g")
@@ -85,6 +85,12 @@ function update(source) {
 	  .style("fill", function(d) { {if (selected==d){return "black"}else{if(d._children){return "lightsteelblue"}else{return "#fff"}}}});
 
   nodeUpdate.select("text")
+      //.attr("x", function(d) { return d.children || d._children ? -13 : 13; })
+	  //.attr("x", function(d) { return d.children || d._children ? -13 : -13; })
+	  //.attr("y", function(d) { return d.children || d._children ? -13 : -13; })
+	  .text(function(d) { return d.name; })
+	  //.attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+	  //.attr("text-anchor", function(d) { return d.children || d._children ? "end" : "end"; })
 	  .style("fill-opacity", 1);
 
   // Transition exiting nodes to the parent's new position.
@@ -147,21 +153,27 @@ function doubleclick(d) {
 // Activate buttons on click.
 function addremove(d){
 	selected = d;
-	document.getElementById('add-child').disabled = false;
-	document.getElementById('remove-node').disabled = false;
-	document.getElementById('remove-child').disabled = false;
+	if(!d._children){
+		document.getElementById('add-child').disabled = false;
+		document.getElementById('remove-node').disabled = false;
+		document.getElementById('remove-child').disabled = false;
+	}
 	update(d);
 }
 
 document.getElementById('add-child').onclick = function() {
 	insert(selected, {});
-update(selected);
+	update(selected);
 }
 document.getElementById('remove-node').onclick = function() {
 	removenode(selected);
 }
 document.getElementById('remove-child').onclick = function() {
 	removechild(selected);
+}
+document.getElementById('turn-bst').onclick = function() {
+	binaryTreeToBNS();
+	
 }
 
 
@@ -175,7 +187,6 @@ function insert(par, data) {
 	par.children.push({
 				//"name": Date.now().toString(),
 				"name": i.toString(),
-				"ancestor": par.name,
 				"children": []
 				});
 	nbnode +=1;
@@ -185,10 +196,11 @@ function insert(par, data) {
 function removenode(par) {
 	if(par==root){
 	par.children = null;
+	par._children = null;
 	update(par);
 	}
 	else{
-			function recur(node,orphan){
+			function trouveParent(node,orphan){
 				if(node.children){
 					var count = node.children.length;
 					var result = null;
@@ -196,14 +208,14 @@ function removenode(par) {
 						if(node.children[i].name == orphan.name){
 							result = node;
 						}else{
-							result = recur(node.children[i],orphan);
+							result = trouveParent(node.children[i],orphan);
 						}
 					}
 					return result;
 				}
 			
 			}
-			parentOfPar = recur(root,par);
+			parentOfPar = trouveParent(root,par);
 			
 			function enleverchild(parentNode,childNode){
 				var count = parentNode.children.length;
@@ -216,6 +228,7 @@ function removenode(par) {
 				parentNode.children = newChildren;		
 			}
 			enleverchild(parentOfPar,par);
+			parentOfPar._children = null;
 			document.getElementById('add-child').disabled = true;
 			document.getElementById('remove-node').disabled = true;
 			document.getElementById('remove-child').disabled = true;
@@ -226,6 +239,126 @@ function removenode(par) {
 
 function removechild(par) {
 	par.children = null;
+	par._children = null;
 	update(par);
 };
+
+function expandTree(node){
+	
+	function expandTreeRecur(node){
+		if(node._children){
+			node.children = node._children;
+			node._children = null;
+		}
+		if(node.children){
+			for(var i = 0;i<node.children.length;i++){
+					expandTreeRecur(node.children[i]);
+			}
+		}
+	}
+	
+	expandTreeRecur(node);
+	update(node);
+}
+
+// A n'utiliser que si l'arbre est totalement étendu
+function isBinaryTree(node){
+	var result = true;
+	if(node.children){
+		if(node.children.length >2){
+			result = false;
+		}
+		else{
+			for(var i = 0;result && i<node.children.length;i++){
+				result = (result && isBinaryTree(node.children[i]));
+			}
+		}
+	}
+	return result;
+};
+
+
+// A n'utiliser que si l'arbre est totalement étendu
+function parcoursBinaryTree() {
+	var list = [];
+	
+	function parcoursInfixe(node,listeNoeud){
+		if(!node.children){
+			listeNoeud.push({"name": node.name});
+		}
+		else if (node.children.length ==2){
+			parcoursInfixe(node.children[0],listeNoeud);
+			listeNoeud.push({"name": node.name});
+			parcoursInfixe(node.children[1],listeNoeud);
+		}else{
+			if(Number(node.children[0].name) < Number(node.name)){
+				parcoursInfixe(node.children[0],listeNoeud);
+				listeNoeud.push({"name": node.name});
+			}else{
+				listeNoeud.push({"name": node.name});
+				parcoursInfixe(node.children[0],listeNoeud);
+			}
+		}
+	}
+	parcoursInfixe(root,list);
+	
+	return list;
+}
+
+// A n'utiliser que si l'arbre est totalement étendu
+function newTreeData(nouvelOrdre) {
+	
+	function parcoursInfixe2(node,listeNoeud){
+		var tempNode;
+		if(!node.children){
+			tempNode = listeNoeud.pop();
+			node.name = tempNode.name;
+		}
+		else if (node.children.length ==2){
+			parcoursInfixe2(node.children[0],listeNoeud);
+			tempNode = listeNoeud.pop();
+			node.name = tempNode.name;
+			parcoursInfixe2(node.children[1],listeNoeud);
+		}else{
+			if(Number(node.children[0].name) < Number(node.name)){
+				parcoursInfixe2(node.children[0],listeNoeud);
+				tempNode = listeNoeud.pop();
+				node.name = tempNode.name;
+			}else{
+				tempNode = listeNoeud.pop();
+				node.name = tempNode.name;
+				parcoursInfixe2(node.children[0],listeNoeud);
+			}
+		}
+	}
+	parcoursInfixe2(root,nouvelOrdre);
+}
+
+// A n'utiliser que si l'arbre est totalement étendu
+function binaryTreeToBNS(){
+	expandTree(root);
+	if(!isBinaryTree(root)){
+		alert("L'arbre fourni n'est pas binaire.");
+	}else{
+		listeParcours = parcoursBinaryTree();
+		listeParcours.sort((a,b)  => {return Number(b.name) - Number(a.name);});
+		newTreeData(listeParcours);
+		update(treeData[0]);
+	}
+	
+}
+
+
+
+
+
+
+//Faire en sorte que l'arbre ne sorte plus de l'écran
+//TODO: Quand on ajoute un noeud on doit aussi laisser l'utilisateur choisir la data
+//TODO: Exporter sous format json/js
+//TODO: mettre le tout dans l'application web globale
+
+//Rotation
+//Equilibrage
+//Recherche (mettre en rouge le noeud par ex)
 
